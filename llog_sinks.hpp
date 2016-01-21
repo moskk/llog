@@ -15,44 +15,59 @@ namespace llog
 namespace sink
 {
 
-template <mode m> class file;
+template <thread_mode threadm, exception_mode excptm = exception_mode::no_throw> class file;
 
-template<> class file<mode::unsafe>
+template<exception_mode excptm> class file<thread_mode::unsafe, excptm>
 {
 public:
     file(const std::string& f):m_f(f){}
     void put(const std::stringstream& ss) const
     {
         using namespace std;
-        ofstream f(m_f, ofstream::out|ofstream::ate);
-        f.exceptions(ofstream::failbit|ofstream::badbit);
-        f << ss.str();
+        try
+        {
+            ofstream f(m_f, ofstream::out|ofstream::ate);
+            f.exceptions(ofstream::failbit|ofstream::badbit);
+            f << ss.str();
+        }
+        catch(...)
+        {
+            if((bool)excptm)
+            {
+                throw current_exception();
+            }
+        }
     }
-    level log_level;
+
+    log_level_mask level_mask;
 
 private:
     std::string m_f;
 };
 
-template<> class file<mode::thread_safe> : file<mode::unsafe>
+template<exception_mode excptm> class file<thread_mode::safe, excptm>
+        : file<thread_mode::unsafe, excptm>
 {
 public:
-    typedef file<mode::unsafe> base;
+    typedef file<thread_mode::unsafe, excptm> base;
     file(const std::string& f):base(f), m_f(f){}
     void put(const std::stringstream& ss) const
     {
         using namespace std;
-        lock_guard<mutex> _(m_mut);
+        volatile lock_guard<mutex> _(m_mut);
         base::put(ss);
     }
+
+    using base::level_mask;
+
 private:
     std::string m_f;
     mutable std::mutex m_mut;
 };
 
-template <mode m> class stdout;
+template <thread_mode threadm, exception_mode excptm = exception_mode::no_throw> class stdout;
 
-template <> class stdout<mode::unsafe>
+template <exception_mode excptm> class stdout<thread_mode::unsafe, excptm>
 {
 public:
     void put(const std::stringstream& ss) const
@@ -60,19 +75,33 @@ public:
         std::cout << ss.str();
     }
 
-    level log_level;
+    log_level_mask level_mask;
 };
 
-template <> class stdout<mode::thread_safe> : stdout<mode::unsafe>
+template <exception_mode excptm> class stdout<thread_mode::safe, excptm>
+        : stdout<thread_mode::unsafe, excptm>
 {
 public:
-    typedef stdout<mode::unsafe> base;
+    typedef stdout<thread_mode::unsafe> base;
     void put(const std::stringstream& ss) const
     {
         using namespace std;
-        lock_guard<mutex> _(m_mut);
-        base::put(ss);
+        try
+        {
+            volatile lock_guard<mutex> _(m_mut);
+            base::put(ss);
+        }
+        catch(...)
+        {
+            if((bool)excptm)
+            {
+                throw current_exception();
+            }
+        }
     }
+
+    using base::level_mask;
+
 private:
     mutable std::mutex m_mut;
 };

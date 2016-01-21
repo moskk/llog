@@ -2,6 +2,13 @@
 #define LOG_HPP
 
 #include "llog.hpp"
-extern llog::logger<llog::sink::file<llog::mode::unsafe>,
-llog::sink::file<llog::mode::thread_safe>> log1;
+
+using namespace llog;
+
+// незащищённый логер, выводящий в стандартный вывод и в файл
+extern sink_writer<sink::file<thread_mode::unsafe>, sink::stdout<thread_mode::unsafe>> unsafe_log;
+
+// потокобезоавсный логер, выводящий в стандартный вывод и в файл
+extern sink_writer<sink::file<thread_mode::safe>, sink::stdout<thread_mode::safe>> safe_log;
+
 #endif // LOG_HPP

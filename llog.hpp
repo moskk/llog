@@ -8,79 +8,112 @@
 namespace llog
 {
 
-template <class sink_t, class... sinks> class logger
+template<class writer_t, class record_t>
+record_t&& make_record(writer_t& writer, loglevel lvl)
+{
+    if(log_level_mask(lvl).good())
+    {
+        return std::move(record_t(writer, lvl));
+    }
+    else
+    {
+        return std::move(record_t(writer, writer.log_level()));
+    }
+}
+
+template <class sink_t, class... sinks> class sink_writer
 {
 public:
-    typedef record<logger<sink_t,sinks...>> record_t;
-    typedef logger<sinks...> next_logger_t;
+    typedef record<sink_writer<sink_t,sinks...>> record_t;
+    typedef sink_writer<sinks...> next_writer_t;
+    sink_writer(sink_t& sink, sinks&... next_sinks)
+        :m_sink(sink), m_next_writer(next_sinks...){}
 
-    logger(sink_t& sink, sinks&... next_sinks)
-        :m_sink(sink), m_next_logger(next_sinks...){}
-
-    record_t&& operator()(level lvl = level(bad))
+    inline record_t&& operator()(loglevel lvl = bad)
     {
-        if(lvl.good())
+        return make_record<sink_writer, record_t>(*this, lvl);
+    }
+
+    inline void put(const std::stringstream& record, loglevel lvl)
+    {
+        // если при создании записи был указан тип сообщения
+        if(log_level_mask(lvl).good())
         {
-            return std::move(record_t(*this, lvl));
+            // и если при этом данный тип пролезает
+            // в приёмник по маске типов сообщений
+            if(sink().level_mask(lvl))
+            {
+                // сохраняем
+                sink().put(record);
+                m_next_writer.put(record, lvl);
+            }
         }
-        else
+        // если же для записи не был указан особый тип,
+        // проверяем маску типов логгера
+        else if(sink().level_mask(log_level()))
         {
-            return std::move(record_t(*this, log_level));
+            sink().put(record);
+            m_next_writer.put(record, lvl);
         }
     }
 
-    void put(const record_t& r)
-    {
-        if(
-                (r.log_level.good() && m_sink.log_level(r.log_level))
-                ||
-                m_sink.log_level(log_level))
-        {
-            m_sink.put(r);
-        }
-    }
+    inline loglevel log_level(){return m_next_writer.log_level();}
 
-    level log_level;
+    inline sink_t& sink(){return m_sink;}
 
 private:
     sink_t& m_sink;
-    next_logger_t m_next_logger;
+    next_writer_t m_next_writer;
 };
 
-template <class sink_t> class logger<sink_t>
+template <class sink_t> class sink_writer<sink_t>
 {
 public:
-    typedef record<logger<sink_t>> record_t;
+    typedef record<sink_writer<sink_t>> record_t;
 
-    logger(sink_t& sink):m_sink(sink){}
+    sink_writer(sink_t& sink):m_sink(sink){}
 
-    record_t&& operator()(level lvl = level(bad))
+    inline record_t&& operator()(log_level_mask lvl = log_level_mask(bad))
     {
-        if(lvl.good())
+        return make_record<sink_writer, record_t>(*this, lvl);
+    }
+
+    inline void put(const std::stringstream& record, loglevel lvl)
+    {
+        // если при создании записи был указан тип сообщения
+        if(log_level_mask(lvl).good())
         {
-            return std::move(record_t(*this, lvl));
+            // и если при этом данный тип пролезает
+            // в приёмник по маске типов сообщений
+            if(sink().level_mask(lvl))
+            {
+                // сохраняем
+                sink().put(record);
+            }
         }
-        else
+        // если же для записи не был указан особый тип,
+        // проверяем маску типов логгера
+        else if(sink().level_mask(log_level()))
         {
-            return std::move(record_t(*this, log_level));
+            sink().put(record);
         }
     }
 
-    void put(const record_t& r)
-    {
-        if(
-                (r.log_level.good() && m_sink.log_level(r.log_level))
-                ||
-                m_sink.log_level(log_level))
-        {
-            m_sink.put(r);
-        }
-    }
 
-    level log_level;
+    inline loglevel log_level(){return m_log_level;}
+
+    inline sink_t& sink(){return m_sink;}
 
 private:
     sink_t& m_sink;
+    loglevel m_log_level;
+};
+
+template<class sink_t, class... sinks> class logger :
+        public sink_writer<sink_t, sinks...>
+{
+public:
+
 };
 
 }

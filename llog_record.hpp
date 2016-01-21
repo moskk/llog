@@ -7,17 +7,16 @@
 namespace llog
 {
 
-template <class logger_t> class record : public std::stringstream
+template <class writer_t> class record : public std::stringstream
 {
 public:
-    //using std::stringstream::operator<<;
-    record(logger_t &logger, level lvl):m_logger(logger), log_level(lvl){}
+    record(writer_t &writer, loglevel lvl):m_writer(writer), m_log_level(lvl){}
     record(record&&) = default;
-    ~record(){m_logger.put(*this);}
-    level log_level;
-
+    ~record(){m_writer.put(static_cast<const std::stringstream&>(*this), log_level());}
+    loglevel log_level() const {return m_log_level;}
 private:
-    logger_t &m_logger;
+    writer_t &m_writer;
+    loglevel m_log_level;
 };
 
 }
