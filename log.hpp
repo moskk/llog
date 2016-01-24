@@ -6,9 +6,10 @@
 using namespace llog;
 
 // незащищённый логер, выводящий в стандартный вывод и в файл
-extern sink_writer<sink::file<thread_mode::unsafe>, sink::stdout<thread_mode::unsafe>> unsafe_log;
-
-// потокобезоавсный логер, выводящий в стандартный вывод и в файл
-extern sink_writer<sink::file<thread_mode::safe>, sink::stdout<thread_mode::safe>> safe_log;
+extern logger<sink::file<thread_mode::unsafe, exception_mode::no_throw>,
+sink::stdout<thread_mode::unsafe, exception_mode::no_throw>> unsafe_log;
+// потокобезопасный логер, выводящий в стандартный вывод и в файл
+extern logger<sink::file<thread_mode::safe, exception_mode::no_throw>,
+sink::stdout<thread_mode::safe, exception_mode::no_throw>> safe_log;
 
 #endif // LOG_HPP

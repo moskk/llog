@@ -4,11 +4,14 @@ CONFIG -= app_bundle
 CONFIG -= qt
 
 SOURCES += main.cpp \
-    log.cpp
+    log.cpp \
+    llog_utils.cpp
 
 HEADERS += \
     llog.hpp \
     llog_sinks.hpp \
     llog_utils.hpp \
     llog_record.hpp \
-    log.hpp
+    log.hpp \
+    llog_bit_mask.hpp \
+    llog_ctxinfo.hpp

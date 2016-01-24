@@ -15,7 +15,7 @@ namespace llog
 namespace sink
 {
 
-template <thread_mode threadm, exception_mode excptm = exception_mode::no_throw> class file;
+template <thread_mode threadm, exception_mode excptm/* = exception_mode::no_throw*/> class file;
 
 template<exception_mode excptm> class file<thread_mode::unsafe, excptm>
 {
@@ -41,7 +41,7 @@ public:
 
     log_level_mask level_mask;
 
-private:
+protected:
     std::string m_f;
 };
 
@@ -50,7 +50,7 @@ template<exception_mode excptm> class file<thread_mode::safe, excptm>
 {
 public:
     typedef file<thread_mode::unsafe, excptm> base;
-    file(const std::string& f):base(f), m_f(f){}
+    file(const std::string& f):base(f){}
     void put(const std::stringstream& ss) const
     {
         using namespace std;
@@ -61,7 +61,6 @@ public:
     using base::level_mask;
 
 private:
-    std::string m_f;
     mutable std::mutex m_mut;
 };
 
@@ -70,6 +69,7 @@ template <thread_mode threadm, exception_mode excptm = exception_mode::no_throw>
 template <exception_mode excptm> class stdout<thread_mode::unsafe, excptm>
 {
 public:
+    stdout(const log_level_mask& llm):level_mask(llm){}
     void put(const std::stringstream& ss) const
     {
         std::cout << ss.str();
@@ -82,7 +82,8 @@ template <exception_mode excptm> class stdout<thread_mode::safe, excptm>
         : stdout<thread_mode::unsafe, excptm>
 {
 public:
-    typedef stdout<thread_mode::unsafe> base;
+    typedef stdout<thread_mode::unsafe, excptm> base;
+    stdout(const log_level_mask& llm):base(llm){}
     void put(const std::stringstream& ss) const
     {
         using namespace std;

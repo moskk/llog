@@ -10,7 +10,15 @@ int main(int argc, char *argv[])
     int i(1);
     float f(.3);
     double d(5.2);
-    unsafe_log() << s << " int " << i << " float " << f << " double " << d << "\n";
-    safe_log() << s << " int " << i << " float " << f << " double " << d << "\n";
+    try
+    {
+        unsafe_log() << s << " int " << i << " float " << f << " double " << d << "\n";
+        safe_log() << s << " int " << i << " float " << f << " double " << d << "\n";
+    }
+    catch(const std::exception &e)
+    {
+        std::cout << e.what() << std::endl;
+    }
+
     return 0;
 }

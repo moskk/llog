@@ -1,6 +1,7 @@
 #ifndef LLOG_HPP
 #define LLOG_HPP
 
+#include <iomanip>
 #include "llog_sinks.hpp"
 #include "llog_record.hpp"
 #include "llog_utils.hpp"
@@ -9,15 +10,15 @@ namespace llog
 {
 
 template<class writer_t, class record_t>
-record_t&& make_record(writer_t& writer, loglevel lvl)
+record_t&& make_record(writer_t* writer, loglevel lvl, const ctxinfo& ctx_info)
 {
     if(log_level_mask(lvl).good())
     {
-        return std::move(record_t(writer, lvl));
+        return std::move(record_t(writer, lvl, ctx_info));
     }
     else
     {
-        return std::move(record_t(writer, writer.log_level()));
+        return std::move(record_t(writer, writer->log_level(), ctx_info));
     }
 }
 
@@ -29,9 +30,9 @@ public:
     sink_writer(sink_t& sink, sinks&... next_sinks)
         :m_sink(sink), m_next_writer(next_sinks...){}
 
-    inline record_t&& operator()(loglevel lvl = bad)
+    inline record_t&& operator()(loglevel lvl = bad, const ctxinfo& ctx_info = ctxinfo())
     {
-        return make_record<sink_writer, record_t>(*this, lvl);
+        return make_record<sink_writer, record_t>(*this, lvl, ctx_info);
     }
 
     inline void put(const std::stringstream& record, loglevel lvl)
@@ -73,9 +74,9 @@ public:
 
     sink_writer(sink_t& sink):m_sink(sink){}
 
-    inline record_t&& operator()(log_level_mask lvl = log_level_mask(bad))
+    inline record_t&& operator()(loglevel lvl = bad, const ctxinfo& ctx_info = ctxinfo())
     {
-        return make_record<sink_writer, record_t>(*this, lvl);
+        return make_record<sink_writer, record_t>(*this, lvl, ctx_info);
     }
 
     inline void put(const std::stringstream& record, loglevel lvl)
@@ -99,21 +100,53 @@ public:
         }
     }
 
-
     inline loglevel log_level(){return m_log_level;}
 
     inline sink_t& sink(){return m_sink;}
 
 private:
     sink_t& m_sink;
-    loglevel m_log_level;
+    loglevel m_log_level = warn;
 };
 
 template<class sink_t, class... sinks> class logger :
         public sink_writer<sink_t, sinks...>
 {
+    typedef sink_writer<sink_t, sinks...> base;
 public:
+    logger(options o, sink_t& sink, sinks&... sinks_)
+        :base(sink, sinks_...), opts(o){}
 
+    typedef record<base> record_t;
+
+    inline record_t&& operator()(loglevel lvl = bad, const ctxinfo &ctx_info = ctxinfo())
+    {
+        return get_record(lvl, ctx_info);
+    }
+
+private:
+    inline record_t&& get_record(loglevel lvl, const ctxinfo &ctx_info)
+    {
+        record_t&& rec(make_record<base, record_t>(this, lvl, ctx_info));
+        if(opts(log_date_time))
+        {
+            using namespace std::chrono;
+            time_t now(system_clock::to_time_t(system_clock::now()));
+            rec << std::put_time(std::localtime(&now), "%F %T") << ' ';
+        }
+        if(opts(log_loglevel))
+        {
+            rec << loglevel_to_str(rec.log_level()) << ' ';
+        }
+        if(opts(log_ctxinfo) && rec.ctx_info().good())
+        {
+            rec << rec.ctx_info().file << ':' << rec.ctx_info().line << ' ';
+        }
+        return std::move(rec);
+    }
+
+private:
+    options opts;
 };
 
 }
