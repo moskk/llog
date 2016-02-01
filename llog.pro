@@ -3,6 +3,8 @@ CONFIG += console c++14
 CONFIG -= app_bundle
 CONFIG -= qt
 
+LIBS += -lpthread
+
 SOURCES += main.cpp \
     log.cpp \
     llog_utils.cpp

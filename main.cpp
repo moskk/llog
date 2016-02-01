@@ -1,4 +1,6 @@
 #include <iostream>
+#include <vector>
+#include <thread>
 
 using namespace std;
 
@@ -45,6 +47,22 @@ int main(int argc, char *argv[])
             unsafe_log.log_level() = error;
             // следующие записи в данный логгер будут иметь указанный уровень.
             unsafe_log() << "i am an error now";
+        }
+
+        // приёмники могут быть простыми или потокозащищёнными. корректное
+        // поведение простых приёмников в потоках без потокозащиты не гарантируется
+        vector<thread> vt;
+        for(int i = 0; i < 20; ++i)
+        {
+            vt.push_back(move(thread([]()
+            {
+                safe_log() << "my id is " << this_thread::get_id() << "and i am ok";
+            }
+            )));
+        }
+        for(auto& t : vt)
+        {
+            t.join();
         }
     }
     catch(const std::exception &e)
