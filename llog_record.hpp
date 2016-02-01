@@ -14,9 +14,10 @@ template <class writer_t> class record : public std::stringstream
 public:
     record(writer_t *writer, loglevel lvl, const ctxinfo& ctx_info)
         :base(), m_writer(writer), m_log_level(lvl), m_ctx(ctx_info){}
-    record(record&&other):base(), m_writer(0), m_log_level(bad)
+
+    record(record&&other):base(), m_writer(0), m_log_level(loglevel::bad)
     {
-        swap(other);
+        swap(static_cast<base&>(other));
         std::swap(m_writer, other.m_writer);
         other.m_writer = nullptr;
         std::swap(m_log_level, other.m_log_level);
@@ -27,6 +28,7 @@ public:
     {
         if(m_writer)
         {
+            *this << std::endl;
             m_writer->put(static_cast<const std::stringstream&>(*this), log_level());
         }
     }

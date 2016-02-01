@@ -27,15 +27,7 @@ enum loglevel:loglevel_t
 
 std::string loglevel_to_str(loglevel ll);
 
-class log_level_mask : public bit_mask<loglevel_t, loglevel, all>
-{
-    typedef bit_mask<loglevel_t, loglevel, all> base;
-public:
-    using base::base;
-    //log_level_mask(loglevel ll):base(ll){}
-    bool good(){return val != bad;}
-};
-
+typedef bit_mask<loglevel_t, loglevel, all> log_level_mask;
 
 typedef unsigned char log_options_t;
 

@@ -20,15 +20,16 @@ template <thread_mode threadm, exception_mode excptm/* = exception_mode::no_thro
 template<exception_mode excptm> class file<thread_mode::unsafe, excptm>
 {
 public:
-    file(const std::string& f):m_f(f){}
+    file(log_level_mask llm, const std::string& f):level_mask(llm), m_f(f){}
     void put(const std::stringstream& ss) const
     {
         using namespace std;
         try
         {
-            ofstream f(m_f, ofstream::out|ofstream::ate);
+            ofstream f(m_f, ofstream::app);
             f.exceptions(ofstream::failbit|ofstream::badbit);
             f << ss.str();
+            f.flush();
         }
         catch(...)
         {
@@ -50,11 +51,11 @@ template<exception_mode excptm> class file<thread_mode::safe, excptm>
 {
 public:
     typedef file<thread_mode::unsafe, excptm> base;
-    file(const std::string& f):base(f){}
+    file(log_level_mask llm, const std::string& f):base(llm, f){}
     void put(const std::stringstream& ss) const
     {
         using namespace std;
-        volatile lock_guard<mutex> _(m_mut);
+        volatile lock_guard<mutex> guard(m_mut);
         base::put(ss);
     }
 
@@ -64,15 +65,16 @@ private:
     mutable std::mutex m_mut;
 };
 
-template <thread_mode threadm, exception_mode excptm = exception_mode::no_throw> class stdout;
+template <thread_mode threadm, exception_mode excptm/* = exception_mode::no_throw*/> class stdout;
 
 template <exception_mode excptm> class stdout<thread_mode::unsafe, excptm>
 {
 public:
-    stdout(const log_level_mask& llm):level_mask(llm){}
+    stdout(log_level_mask llm):level_mask(llm){}
     void put(const std::stringstream& ss) const
     {
         std::cout << ss.str();
+        std::cout.flush();
     }
 
     log_level_mask level_mask;
@@ -83,13 +85,13 @@ template <exception_mode excptm> class stdout<thread_mode::safe, excptm>
 {
 public:
     typedef stdout<thread_mode::unsafe, excptm> base;
-    stdout(const log_level_mask& llm):base(llm){}
+    stdout(log_level_mask llm):base(llm){}
     void put(const std::stringstream& ss) const
     {
         using namespace std;
         try
         {
-            volatile lock_guard<mutex> _(m_mut);
+            volatile lock_guard<mutex> guard(m_mut);
             base::put(ss);
         }
         catch(...)

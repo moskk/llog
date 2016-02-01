@@ -5,15 +5,15 @@ std::string llog::loglevel_to_str(llog::loglevel ll)
 {
     switch (ll) {
     case debug:
-        return "debug";
+        return "DEBUG";
     case info:
-        return "info ";
+        return "INFO ";
     case warn:
-        return "warn ";
+        return "WARN ";
     case error:
-        return "error";
+        return "ERROR";
     case fatal:
-        return "fatal";
+        return "FATAL";
     default:
         return "";
     }

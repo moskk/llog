@@ -10,9 +10,9 @@ namespace llog
 {
 
 template<class writer_t, class record_t>
-record_t&& make_record(writer_t* writer, loglevel lvl, const ctxinfo& ctx_info)
+record_t make_record(writer_t* writer, loglevel lvl, const ctxinfo& ctx_info)
 {
-    if(log_level_mask(lvl).good())
+    if(lvl != bad)
     {
         return std::move(record_t(writer, lvl, ctx_info));
     }
@@ -37,20 +37,14 @@ public:
 
     inline void put(const std::stringstream& record, loglevel lvl)
     {
-        // если при создании записи был указан тип сообщения
-        if(log_level_mask(lvl).good())
+        if(lvl != bad)
         {
-            // и если при этом данный тип пролезает
-            // в приёмник по маске типов сообщений
             if(sink().level_mask(lvl))
             {
-                // сохраняем
                 sink().put(record);
                 m_next_writer.put(record, lvl);
             }
         }
-        // если же для записи не был указан особый тип,
-        // проверяем маску типов логгера
         else if(sink().level_mask(log_level()))
         {
             sink().put(record);
@@ -58,7 +52,7 @@ public:
         }
     }
 
-    inline loglevel log_level(){return m_next_writer.log_level();}
+    inline loglevel& log_level(){return m_next_writer.log_level();}
 
     inline sink_t& sink(){return m_sink;}
 
@@ -81,26 +75,26 @@ public:
 
     inline void put(const std::stringstream& record, loglevel lvl)
     {
-        // если при создании записи был указан тип сообщения
-        if(log_level_mask(lvl).good())
+        // если при создании записи был указан уровень сообщения
+        if(lvl != bad)
         {
-            // и если при этом данный тип пролезает
-            // в приёмник по маске типов сообщений
+            // и если при этом данный уровень пролезает
+            // в приёмник по маске уровней сообщений
             if(sink().level_mask(lvl))
             {
                 // сохраняем
                 sink().put(record);
             }
         }
-        // если же для записи не был указан особый тип,
-        // проверяем маску типов логгера
+        // если же для записи не был указан особый уровень,
+        // проверяем маску уровней логгера
         else if(sink().level_mask(log_level()))
         {
             sink().put(record);
         }
     }
 
-    inline loglevel log_level(){return m_log_level;}
+    inline loglevel& log_level(){return m_log_level;}
 
     inline sink_t& sink(){return m_sink;}
 
@@ -119,28 +113,38 @@ public:
 
     typedef record<base> record_t;
 
-    inline record_t&& operator()(loglevel lvl = bad, const ctxinfo &ctx_info = ctxinfo())
+    inline record_t operator()(loglevel lvl, const ctxinfo &ctx_info = ctxinfo())
     {
-        return get_record(lvl, ctx_info);
+        return std::move(get_record(lvl, ctx_info));
+    }
+
+    inline record_t operator()(const ctxinfo &ctx_info, loglevel lvl = bad)
+    {
+        return std::move(get_record(lvl, ctx_info));
+    }
+
+    inline record_t operator()()
+    {
+        return std::move(get_record(bad, ctxinfo()));
     }
 
 private:
-    inline record_t&& get_record(loglevel lvl, const ctxinfo &ctx_info)
+    inline record_t get_record(loglevel lvl, const ctxinfo &ctx_info)
     {
-        record_t&& rec(make_record<base, record_t>(this, lvl, ctx_info));
+        record_t rec(make_record<base, record_t>(this, lvl, ctx_info));
         if(opts(log_date_time))
         {
             using namespace std::chrono;
             time_t now(system_clock::to_time_t(system_clock::now()));
-            rec << std::put_time(std::localtime(&now), "%F %T") << ' ';
+            rec << '[' << std::put_time(std::localtime(&now), "%F %T") << "] ";
         }
         if(opts(log_loglevel))
         {
-            rec << loglevel_to_str(rec.log_level()) << ' ';
+            rec << '[' << loglevel_to_str(rec.log_level()) << "] ";
         }
         if(opts(log_ctxinfo) && rec.ctx_info().good())
         {
-            rec << rec.ctx_info().file << ':' << rec.ctx_info().line << ' ';
+            rec << '[' << rec.ctx_info().file << ':' << rec.ctx_info().line << "] ";
         }
         return std::move(rec);
     }
