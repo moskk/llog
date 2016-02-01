@@ -37,6 +37,10 @@ public:
 
     inline void put(const std::stringstream& record, loglevel lvl)
     {
+        if( log_level_mask(log_level())(none) || sink().level_mask(none) || log_level_mask(lvl)(none) )
+        {
+            return;
+        }
         if(lvl != bad)
         {
             if(sink().level_mask(lvl))
@@ -44,11 +48,13 @@ public:
                 sink().put(record);
                 m_next_writer.put(record, lvl);
             }
+            return;
         }
-        else if(sink().level_mask(log_level()))
+        if(sink().level_mask(log_level()))
         {
             sink().put(record);
             m_next_writer.put(record, lvl);
+            return;
         }
     }
 
@@ -75,6 +81,13 @@ public:
 
     inline void put(const std::stringstream& record, loglevel lvl)
     {
+        // если на уровне логера, приёмника или записи логирование отключено
+        // путём выбора соответствующего уровня (none)
+        if( log_level_mask(log_level())(none) || sink().level_mask(none) || log_level_mask(lvl)(none) )
+        {
+            // игнорируем запись
+            return;
+        }
         // если при создании записи был указан уровень сообщения
         if(lvl != bad)
         {

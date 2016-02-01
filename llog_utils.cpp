@@ -15,6 +15,6 @@ std::string llog::loglevel_to_str(llog::loglevel ll)
     case fatal:
         return "FATAL";
     default:
-        return "";
+        return "     ";
     }
 }

@@ -4,15 +4,14 @@
 
 using namespace llog;
 
-//log_level_mask all_mask(all);
-
 // незащищённый файловый приёмник для сообщений всех уровней
 sink::file<thread_mode::unsafe, exception_mode::no_throw>
 f_sink(log_level_mask(all), "log.txt");
 
 // потокобезопасный файловый приёмник для сообщений всех уровней
 sink::file<thread_mode::safe, exception_mode::no_throw>
-ts_f_sink(log_level_mask(all), "tslog.txt");
+ts_f_sink(log_level_mask(), "tslog.txt");
+// в сконструированном по умолчанию объекте log_level_mask включены все уровни
 
 // незащищённый приёмник потока стандартного вывода
 // принимает сообщения всех уровней, кроме debug и warn

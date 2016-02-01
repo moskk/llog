@@ -22,7 +22,7 @@ enum loglevel:loglevel_t
     error = 0x8,
     fatal = 0x10,
     all = debug | info | warn | error | fatal,
-    none = 0x20
+    none = 0x20                               // не логировать
 };
 
 std::string loglevel_to_str(loglevel ll);

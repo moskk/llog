@@ -26,7 +26,11 @@ public:
 
     ~record()
     {
-        if(m_writer)
+        if( m_log_level == none )
+        {
+            return;
+        }
+        if( m_writer && (tellp() != 0) )
         {
             *this << std::endl;
             m_writer->put(static_cast<const std::stringstream&>(*this), log_level());
