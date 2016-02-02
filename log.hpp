@@ -17,4 +17,6 @@ sink::stdout<thread_mode::unsafe, exception_mode::no_throw>> unsafe_log;
 extern logger<sink::file<thread_mode::safe, exception_mode::no_throw>,
 sink::stdout<thread_mode::safe, exception_mode::no_throw>> safe_log;
 
+extern logger<sink::file<thread_mode::unsafe, exception_mode::_throw>> bad_logger;
+
 #endif // LOG_HPP

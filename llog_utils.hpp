@@ -7,15 +7,18 @@
 namespace llog
 {
 
+// режим потокобезопасности для приёмников
 enum class thread_mode{unsafe, safe};
 
+// режим работы с исключениями для приёмников
 enum class exception_mode{_throw = 1, no_throw = 0};
 
 typedef unsigned char loglevel_t;
 
+// значения уровней логирования
 enum loglevel:loglevel_t
 {
-    bad = 0x0,
+    invalid = 0x0,                            // для записей (использовать уровень логера по умолчанию)
     debug = 0x1,
     info = 0x2,
     warn = 0x4,
@@ -27,19 +30,20 @@ enum loglevel:loglevel_t
 
 std::string loglevel_to_str(loglevel ll);
 
+// контейнер допустимых уровней логирования
 typedef bit_mask<loglevel_t, loglevel, all> log_level_mask;
 
 typedef unsigned char log_options_t;
 
 enum option : log_options_t
 {
-    default_ = 0x0,
-    log_date_time = 0x1,
-    log_ctxinfo = 0x2,
-    log_loglevel = 0x4
+    log_default = 0x0,  // только сообщения
+    log_date_time = 0x1,// логировать дату/время
+    log_ctxinfo = 0x2,  // логировать файл и номер строки (см. пример использования)
+    log_loglevel = 0x4  // логировать уровень сообщения
 };
 
-typedef bit_mask<log_options_t, option, default_> options;
+typedef bit_mask<log_options_t, option, invalid> options;
 
 } // namespace llog
 

@@ -15,7 +15,7 @@ public:
     record(writer_t *writer, loglevel lvl, const ctxinfo& ctx_info)
         :base(), m_writer(writer), m_log_level(lvl), m_ctx(ctx_info){}
 
-    record(record&&other):base(), m_writer(0), m_log_level(loglevel::bad)
+    record(record&&other):base(), m_writer(0), m_log_level(loglevel::invalid)
     {
         swap(static_cast<base&>(other));
         std::swap(m_writer, other.m_writer);
@@ -40,7 +40,7 @@ public:
     const ctxinfo& ctx_info() const {return m_ctx;}
 private:
     writer_t* m_writer = nullptr;
-    loglevel m_log_level = bad;
+    loglevel m_log_level = invalid;
     ctxinfo m_ctx;
 };
 

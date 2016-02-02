@@ -1,6 +1,5 @@
 
 #include "log.hpp"
-#include "llog_utils.hpp"
 
 using namespace llog;
 
@@ -23,12 +22,24 @@ so_sink(log_level_mask(all) - debug - info);
 sink::stdout<thread_mode::safe, exception_mode::no_throw>
 ts_so_sink(log_level_mask(all) - debug - info);
 
+// логеры можно создавать на основе любого количества приёмников. один приёмник
+// можно использовать в любом количестве
+
 // незащищённый логер, выводящий в стандартный вывод и в файл
 logger<sink::file<thread_mode::unsafe, exception_mode::no_throw>,
 sink::stdout<thread_mode::unsafe, exception_mode::no_throw>>
 unsafe_log(options() + log_date_time + log_ctxinfo + log_loglevel, f_sink, so_sink);
 
-// потокобезоавсный логер, выводящий в стандартный вывод и в файл
+// потокобезопасный логер, выводящий в стандартный вывод и в файл
 logger<sink::file<thread_mode::safe, exception_mode::no_throw>,
 sink::stdout<thread_mode::safe, exception_mode::no_throw>>
 safe_log(options() + log_date_time + log_ctxinfo + log_loglevel, ts_f_sink, ts_so_sink);
+
+// приёмник, в который ничего нельзя вывести,
+// если только программа запущена не от имени суперпользователя
+sink::file<thread_mode::unsafe, exception_mode::_throw>
+bad_f_sink(log_level_mask(all), "/etc/fstab");
+
+// логер, который не должен работать от имени обычного пользователя
+logger<sink::file<thread_mode::unsafe, exception_mode::_throw>>
+bad_logger(options() + log_date_time + log_ctxinfo + log_loglevel, bad_f_sink);

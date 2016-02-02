@@ -12,7 +12,7 @@ namespace llog
 template<class writer_t, class record_t>
 record_t make_record(writer_t* writer, loglevel lvl, const ctxinfo& ctx_info)
 {
-    if(lvl != bad)
+    if(lvl != invalid)
     {
         return std::move(record_t(writer, lvl, ctx_info));
     }
@@ -30,7 +30,7 @@ public:
     sink_writer(sink_t& sink, sinks&... next_sinks)
         :m_sink(sink), m_next_writer(next_sinks...){}
 
-    inline record_t&& operator()(loglevel lvl = bad, const ctxinfo& ctx_info = ctxinfo())
+    inline record_t&& operator()(loglevel lvl = invalid, const ctxinfo& ctx_info = ctxinfo())
     {
         return make_record<sink_writer, record_t>(*this, lvl, ctx_info);
     }
@@ -41,7 +41,7 @@ public:
         {
             return;
         }
-        if(lvl != bad)
+        if(lvl != invalid)
         {
             if(sink().level_mask(lvl))
             {
@@ -74,7 +74,7 @@ public:
 
     sink_writer(sink_t& sink):m_sink(sink){}
 
-    inline record_t&& operator()(loglevel lvl = bad, const ctxinfo& ctx_info = ctxinfo())
+    inline record_t&& operator()(loglevel lvl = invalid, const ctxinfo& ctx_info = ctxinfo())
     {
         return make_record<sink_writer, record_t>(*this, lvl, ctx_info);
     }
@@ -89,7 +89,7 @@ public:
             return;
         }
         // если при создании записи был указан уровень сообщения
-        if(lvl != bad)
+        if(lvl != invalid)
         {
             // и если при этом данный уровень пролезает
             // в приёмник по маске уровней сообщений
@@ -100,7 +100,7 @@ public:
             }
         }
         // если же для записи не был указан особый уровень,
-        // проверяем маску уровней логгера
+        // проверяем маску уровней логера
         else if(sink().level_mask(log_level()))
         {
             sink().put(record);
@@ -131,31 +131,31 @@ public:
         return std::move(get_record(lvl, ctx_info));
     }
 
-    inline record_t operator()(const ctxinfo &ctx_info, loglevel lvl = bad)
+    inline record_t operator()(const ctxinfo &ctx_info, loglevel lvl = invalid)
     {
         return std::move(get_record(lvl, ctx_info));
     }
 
     inline record_t operator()()
     {
-        return std::move(get_record(bad, ctxinfo()));
+        return std::move(get_record(invalid, ctxinfo()));
     }
 
 private:
     inline record_t get_record(loglevel lvl, const ctxinfo &ctx_info)
     {
         record_t rec(make_record<base, record_t>(this, lvl, ctx_info));
-        if(opts(log_date_time))
+        if(opts(llog::option::log_date_time))
         {
             using namespace std::chrono;
             time_t now(system_clock::to_time_t(system_clock::now()));
             rec << '[' << std::put_time(std::localtime(&now), "%F %T") << "] ";
         }
-        if(opts(log_loglevel))
+        if(opts(llog::option::log_loglevel))
         {
             rec << '[' << loglevel_to_str(rec.log_level()) << "] ";
         }
-        if(opts(log_ctxinfo) && rec.ctx_info().good())
+        if(opts(llog::option::log_ctxinfo) && rec.ctx_info().good())
         {
             rec << '[' << rec.ctx_info().file << ':' << rec.ctx_info().line << "] ";
         }
